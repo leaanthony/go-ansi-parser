@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+// TextStyle is a type representing the
+// ansi text styles
 type TextStyle int
 
 const (
@@ -19,6 +21,7 @@ const (
 	Strikethrough TextStyle = 1 << 7
 )
 
+// Styledtext represents a single formatted string
 type StyledText struct {
 	Label string
 	FgCol *Col
@@ -26,27 +29,42 @@ type StyledText struct {
 	Style TextStyle
 }
 
+// Bold will return true if the text has a Bold style
 func (s *StyledText) Bold() bool {
 	return s.Style&Bold == Bold
 }
+
+// Faint will return true if the text has a Faint style
 func (s *StyledText) Faint() bool {
 	return s.Style&Faint == Faint
 }
+
+// Italic will return true if the text has an Italic style
 func (s *StyledText) Italic() bool {
 	return s.Style&Italic == Italic
 }
+
+// Blinking will return true if the text has a Blinking style
 func (s *StyledText) Blinking() bool {
 	return s.Style&Blinking == Blinking
 }
+
+// Inversed will return true if the text has an Inversed style
 func (s *StyledText) Inversed() bool {
 	return s.Style&Inversed == Inversed
 }
+
+// Invisible will return true if the text has an Invisible style
 func (s *StyledText) Invisible() bool {
 	return s.Style&Invisible == Invisible
 }
+
+// Underlined will return true if the text has an Underlined style
 func (s *StyledText) Underlined() bool {
 	return s.Style&Underlined == Underlined
 }
+
+// Strikethrough will return true if the text has a Strikethrough style
 func (s *StyledText) Strikethrough() bool {
 	return s.Style&Strikethrough == Strikethrough
 }
@@ -85,6 +103,9 @@ var ColourMap = map[string]map[string]*Col{
 	},
 }
 
+// Parse will convert an ansi encoded string and return
+// a slice of StyledText structs that represent the text.
+// If parsing is unsuccessful, an error is returned.
 func Parse(input string) ([]*StyledText, error) {
 	var result []*StyledText
 	invalid := fmt.Errorf("invalid ansi string")
