@@ -36,6 +36,7 @@ type InputCol struct {
 	Name string `json:"name"`
 }
 
+// Template is our cols.go template
 //go:embed gen.tmpl
 var Template string
 
