@@ -11,17 +11,25 @@ import (
 type TextStyle int
 
 const (
-	Bold          TextStyle = 1 << 0
-	Faint         TextStyle = 1 << 1
-	Italic        TextStyle = 1 << 2
-	Blinking      TextStyle = 1 << 3
-	Inversed      TextStyle = 1 << 4
-	Invisible     TextStyle = 1 << 5
-	Underlined    TextStyle = 1 << 6
+	// Bold Style
+	Bold TextStyle = 1 << 0
+	// Faint Style
+	Faint TextStyle = 1 << 1
+	// Italic Style
+	Italic TextStyle = 1 << 2
+	// Blinking Style
+	Blinking TextStyle = 1 << 3
+	// Inversed Style
+	Inversed TextStyle = 1 << 4
+	// Invisible Style
+	Invisible TextStyle = 1 << 5
+	// Underlined Style
+	Underlined TextStyle = 1 << 6
+	// Strikethrough Style
 	Strikethrough TextStyle = 1 << 7
 )
 
-// Styledtext represents a single formatted string
+// StyledText represents a single formatted string
 type StyledText struct {
 	Label string
 	FgCol *Col
