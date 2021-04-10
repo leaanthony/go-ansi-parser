@@ -238,6 +238,9 @@ func TestParseAnsi16MultiColour(t *testing.T) {
 			{Label: "👩🏽‍🔧", FgCol: &Col{Name: "Green"}, Style: Invisible},
 			{Label: "👩🏽‍🔧", FgCol: &Col{Name: "Olive"}, Style: Invisible | Strikethrough},
 		}, false},
+		{"Red Foregraound & Black Background", "\u001b[1;31;40mHello World\033[0m", []*StyledText{
+			{Label: "Hello World", FgCol: &Col{Name: "Red"}, BgCol: &Col{Name: "Black"}, Style: Bold},
+		}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
