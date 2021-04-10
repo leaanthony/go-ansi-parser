@@ -28,7 +28,7 @@ go get github.com/leaanthony/go-ansi-parser
 ## Usage
 
 ```go
-var text, err = ansi.Parse("\u001b[1;31;4mHello World\033[0m")
+var text, err = ansi.Parse("\u001b[1;31;40mHello World\033[0m")
 
 // is the equivalent of...
 
@@ -42,7 +42,13 @@ var text = []*ansi.StyledText{
             Hsl:  &ansi.Hsl{ H: 0, S: 100, L: 50 },
             Name: "Red",
         },
-        BgCol: null,
+        BgCol: &ansi.Col{
+            Id:   0,
+            Hex:  "#000000",
+            Rgb:  Rgb{0, 0, 0},
+            Hsl:  Hsl{0, 0, 0},
+            Name: "Black",
+        },
         Style: 1,
     },
 }
