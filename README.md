@@ -45,8 +45,8 @@ var text = []*ansi.StyledText{
         BgCol: &ansi.Col{
             Id:   0,
             Hex:  "#000000",
-            Rgb:  Rgb{0, 0, 0},
-            Hsl:  Hsl{0, 0, 0},
+            Rgb:  &ansi.Rgb{0, 0, 0},
+            Hsl:  &ansi.Hsl{0, 0, 0},
             Name: "Black",
         },
         Style: 1,
