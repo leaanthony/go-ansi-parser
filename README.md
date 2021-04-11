@@ -16,7 +16,7 @@ into a slice of structs that represent styled text. Features:
 
   * Can parse ANSI 16, 256 and TrueColor
   * Supports all styles: Regular, Bold, Faint, Italic, Blinking, Inversed, Invisible, Underlined, Strikethrough
-  * Provides RBG, Hex, HSL, ANSI ID and Name for parsed colours
+  * Provides RGB, Hex, HSL, ANSI ID and Name for parsed colours
   * Configurable colour map for customisation
   * 100% Test Coverage
 
