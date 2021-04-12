@@ -3,58 +3,58 @@ package ansi
 import (
 	"testing"
 
-	"github.com/matryer/is"
+	is "github.com/matryer/is"
 )
 
 func TestParseAnsi16Styles(t *testing.T) {
-	is := is.New(t)
+	is2 := is.New(t)
 	var got []*StyledText
 	var err error
 
 	// Bold
 	got, err = Parse("\u001b[1;30mHello World\033[0m")
-	is.NoErr(err)
-	is.Equal(len(got), 1)
-	is.True(got[0].Bold())
+	is2.NoErr(err)
+	is2.Equal(len(got), 1)
+	is2.True(got[0].Bold())
 	// Faint
 	got, err = Parse("\u001b[2;30mHello World\033[0m")
-	is.NoErr(err)
-	is.Equal(len(got), 1)
-	is.True(got[0].Faint())
+	is2.NoErr(err)
+	is2.Equal(len(got), 1)
+	is2.True(got[0].Faint())
 	// Italic
 	got, err = Parse("\u001b[3;30mHello World\033[0m")
-	is.NoErr(err)
-	is.Equal(len(got), 1)
-	is.True(got[0].Italic())
+	is2.NoErr(err)
+	is2.Equal(len(got), 1)
+	is2.True(got[0].Italic())
 	// Underlined
 	got, err = Parse("\u001b[4;30mHello World\033[0m")
-	is.NoErr(err)
-	is.Equal(len(got), 1)
-	is.True(got[0].Underlined())
+	is2.NoErr(err)
+	is2.Equal(len(got), 1)
+	is2.True(got[0].Underlined())
 	// Blinking
 	got, err = Parse("\u001b[5;30mHello World\033[0m")
-	is.NoErr(err)
-	is.Equal(len(got), 1)
-	is.True(got[0].Blinking())
+	is2.NoErr(err)
+	is2.Equal(len(got), 1)
+	is2.True(got[0].Blinking())
 	// Inversed
 	got, err = Parse("\u001b[7;30mHello World\033[0m")
-	is.NoErr(err)
-	is.Equal(len(got), 1)
-	is.True(got[0].Inversed())
+	is2.NoErr(err)
+	is2.Equal(len(got), 1)
+	is2.True(got[0].Inversed())
 	// Invisible
 	got, err = Parse("\u001b[8;30mHello World\033[0m")
-	is.NoErr(err)
-	is.Equal(len(got), 1)
-	is.True(got[0].Invisible())
+	is2.NoErr(err)
+	is2.Equal(len(got), 1)
+	is2.True(got[0].Invisible())
 	// Strikethrough
 	got, err = Parse("\u001b[9;30mHello World\033[0m")
-	is.NoErr(err)
-	is.Equal(len(got), 1)
-	is.True(got[0].Strikethrough())
+	is2.NoErr(err)
+	is2.Equal(len(got), 1)
+	is2.True(got[0].Strikethrough())
 }
 
 func TestParseAnsi16Swap(t *testing.T) {
-	is := is.New(t)
+	is2 := is.New(t)
 	var got []*StyledText
 	var err error
 
@@ -67,20 +67,20 @@ func TestParseAnsi16Swap(t *testing.T) {
 	original := ColourMap["Regular"]["30"]
 	ColourMap["Regular"]["30"] = c0ffee
 	got, err = Parse("\u001b[0;30mHello World\033[0m")
-	is.NoErr(err)
-	is.Equal(len(got), 1)
-	is.Equal(got[0].FgCol.Name, "Coffee")
+	is2.NoErr(err)
+	is2.Equal(len(got), 1)
+	is2.Equal(got[0].FgCol.Name, "Coffee")
 
 	// Restore
 	ColourMap["Regular"]["30"] = original
 	got, err = Parse("\u001b[0;30mHello World\033[0m")
-	is.NoErr(err)
-	is.Equal(len(got), 1)
-	is.Equal(got[0].FgCol.Name, "Black")
+	is2.NoErr(err)
+	is2.Equal(len(got), 1)
+	is2.Equal(got[0].FgCol.Name, "Black")
 }
 
 func TestParseAnsi16SingleColour(t *testing.T) {
-	is := is.New(t)
+	is2 := is.New(t)
 	tests := []struct {
 		name      string
 		input     string
@@ -113,16 +113,16 @@ func TestParseAnsi16SingleColour(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := Parse(tt.input)
-			is.Equal(err != nil, tt.wantErr)
+			is2.Equal(err != nil, tt.wantErr)
 			expectedLength := 1
 			if tt.wantErr {
 				expectedLength = 0
 			}
-			is.Equal(len(got), expectedLength)
+			is2.Equal(len(got), expectedLength)
 			if expectedLength == 1 {
 				if len(tt.wantColor) > 0 {
-					is.True(got[0].FgCol != nil)
-					is.Equal(got[0].FgCol.Name, tt.wantColor)
+					is2.True(got[0].FgCol != nil)
+					is2.Equal(got[0].FgCol.Name, tt.wantColor)
 				}
 			}
 		})
@@ -130,7 +130,7 @@ func TestParseAnsi16SingleColour(t *testing.T) {
 }
 
 func TestParseAnsi16SingleBGColour(t *testing.T) {
-	is := is.New(t)
+	is2 := is.New(t)
 	tests := []struct {
 		name      string
 		input     string
@@ -164,16 +164,16 @@ func TestParseAnsi16SingleBGColour(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := Parse(tt.input)
-			is.Equal(err != nil, tt.wantErr)
+			is2.Equal(err != nil, tt.wantErr)
 			expectedLength := 1
 			if tt.wantErr {
 				expectedLength = 0
 			}
-			is.Equal(len(got), expectedLength)
+			is2.Equal(len(got), expectedLength)
 			if expectedLength == 1 {
 				if len(tt.wantColor) > 0 {
-					is.True(got[0].BgCol != nil)
-					is.Equal(got[0].BgCol.Name, tt.wantColor)
+					is2.True(got[0].BgCol != nil)
+					is2.Equal(got[0].BgCol.Name, tt.wantColor)
 				}
 			}
 		})
@@ -181,7 +181,7 @@ func TestParseAnsi16SingleBGColour(t *testing.T) {
 }
 
 func TestParseAnsi16MultiColour(t *testing.T) {
-	is := is.New(t)
+	is2 := is.New(t)
 	tests := []struct {
 		name    string
 		input   string
@@ -245,20 +245,20 @@ func TestParseAnsi16MultiColour(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := Parse(tt.input)
-			is.Equal(err != nil, tt.wantErr)
+			is2.Equal(err != nil, tt.wantErr)
 			for index, w := range tt.want {
-				is.Equal(got[index].Label, w.Label)
+				is2.Equal(got[index].Label, w.Label)
 				if w.FgCol != nil {
-					is.Equal(got[index].FgCol.Name, w.FgCol.Name)
+					is2.Equal(got[index].FgCol.Name, w.FgCol.Name)
 				}
-				is.Equal(got[index].Style, w.Style)
+				is2.Equal(got[index].Style, w.Style)
 			}
 		})
 	}
 }
 
 func TestParseAnsi256(t *testing.T) {
-	is := is.New(t)
+	is2 := is.New(t)
 	tests := []struct {
 		name    string
 		input   string
@@ -283,20 +283,20 @@ func TestParseAnsi256(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := Parse(tt.input)
-			is.Equal(err != nil, tt.wantErr)
+			is2.Equal(err != nil, tt.wantErr)
 			for index, w := range tt.want {
-				is.Equal(got[index].Label, w.Label)
+				is2.Equal(got[index].Label, w.Label)
 				if w.FgCol != nil {
-					is.Equal(got[index].FgCol.Name, w.FgCol.Name)
+					is2.Equal(got[index].FgCol.Name, w.FgCol.Name)
 				}
-				is.Equal(got[index].Style, w.Style)
+				is2.Equal(got[index].Style, w.Style)
 			}
 		})
 	}
 }
 
 func TestParseAnsiBG256(t *testing.T) {
-	is := is.New(t)
+	is2 := is.New(t)
 	tests := []struct {
 		name    string
 		input   string
@@ -321,20 +321,20 @@ func TestParseAnsiBG256(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := Parse(tt.input)
-			is.Equal(err != nil, tt.wantErr)
+			is2.Equal(err != nil, tt.wantErr)
 			for index, w := range tt.want {
-				is.Equal(got[index].Label, w.Label)
+				is2.Equal(got[index].Label, w.Label)
 				if w.FgCol != nil {
-					is.Equal(got[index].BgCol.Name, w.BgCol.Name)
+					is2.Equal(got[index].BgCol.Name, w.BgCol.Name)
 				}
-				is.Equal(got[index].Style, w.Style)
+				is2.Equal(got[index].Style, w.Style)
 			}
 		})
 	}
 }
 
 func TestParseAnsiTrueColor(t *testing.T) {
-	is := is.New(t)
+	is2 := is.New(t)
 	tests := []struct {
 		name    string
 		input   string
@@ -364,19 +364,37 @@ func TestParseAnsiTrueColor(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := Parse(tt.input)
-			is.Equal(err != nil, tt.wantErr)
+			is2.Equal(err != nil, tt.wantErr)
 			for index, w := range tt.want {
-				is.Equal(got[index].Label, w.Label)
+				is2.Equal(got[index].Label, w.Label)
 				if w.FgCol != nil {
-					is.Equal(got[index].FgCol.Hex, w.FgCol.Hex)
-					is.Equal(got[index].FgCol.Rgb, w.FgCol.Rgb)
+					is2.Equal(got[index].FgCol.Hex, w.FgCol.Hex)
+					is2.Equal(got[index].FgCol.Rgb, w.FgCol.Rgb)
 				}
 				if w.BgCol != nil {
-					is.Equal(got[index].BgCol.Hex, w.BgCol.Hex)
-					is.Equal(got[index].BgCol.Rgb, w.BgCol.Rgb)
+					is2.Equal(got[index].BgCol.Hex, w.BgCol.Hex)
+					is2.Equal(got[index].BgCol.Rgb, w.BgCol.Rgb)
 				}
-				is.Equal(got[index].Style, w.Style)
+				is2.Equal(got[index].Style, w.Style)
 			}
+		})
+	}
+}
+
+func TestHasEscapeCodes(t *testing.T) {
+	is2 := is.New(t)
+	tests := []struct {
+		name  string
+		input string
+		want  bool
+	}{
+		{"yes", "\u001B[0;30mHello World\033[0m\u001B[0;31mHello World\u001B[0m", true},
+		{"no", "This is great!", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := HasEscapeCodes(tt.input)
+			is2.Equal(got, tt.want)
 		})
 	}
 }

@@ -271,3 +271,7 @@ func Parse(input string) ([]*StyledText, error) {
 		}
 	}
 }
+
+func HasEscapeCodes(input string) bool {
+	return strings.IndexAny(input, "\033[") != -1
+}
