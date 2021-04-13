@@ -398,3 +398,95 @@ func TestHasEscapeCodes(t *testing.T) {
 		})
 	}
 }
+
+func TestString(t *testing.T) {
+	is2 := is.New(t)
+	tests := []struct {
+		name  string
+		input []*StyledText
+		want  string
+	}{
+		{"Blank", []*StyledText{}, ""},
+		{"ANSI16 Fg", []*StyledText{{Label: "Red", FgCol: Cols[1]}}, "\033[0;31mRed\033[0m"},
+		{"ANSI16 Fg Bold", []*StyledText{{Label: "Red", FgCol: Cols[1], Style: Bold}}, "\033[0;1;31mRed\033[0m"},
+		{"ANSI16 Fg Strikethrough", []*StyledText{{Label: "Red", FgCol: Cols[1], Style: Strikethrough}}, "\033[0;9;31mRed\033[0m"},
+		{"ANSI16 Fg Bold & Italic", []*StyledText{{Label: "Red", FgCol: Cols[1], Style: Bold | Italic}}, "\033[0;1;3;31mRed\033[0m"},
+		{"ANSI16 Bg", []*StyledText{{Label: "Black", BgCol: Cols[0]}}, "\033[0;40mBlack\033[0m"},
+		{"ANSI16 Mixed", []*StyledText{{Label: "Mixed", FgCol: Cols[1], BgCol: Cols[0]}}, "\033[0;31;40mMixed\033[0m"},
+		{"ANSI256 Fg", []*StyledText{{Label: "Dark Blue", FgCol: Cols[18]}}, "\033[0;38;5;18mDark Blue\033[0m"},
+		{"ANSI256 Fg Bold", []*StyledText{{Label: "Dark Blue", FgCol: Cols[18], Style: Bold}}, "\033[0;1;38;5;18mDark Blue\033[0m"},
+		{"ANSI256 Bg", []*StyledText{{Label: "Dark Blue", BgCol: Cols[18]}}, "\033[0;48;5;18mDark Blue\033[0m"},
+		{"ANSI256 Bg Bold", []*StyledText{{Label: "Dark Blue", BgCol: Cols[18], Style: Bold}}, "\033[0;1;48;5;18mDark Blue\033[0m"},
+		{"Truecolor Fg", []*StyledText{{Label: "TrueColor!", FgCol: &Col{Id: 256, Rgb: Rgb{R: 128, G: 127, B: 126}}}}, "\033[0;38;2;128;127;126mTrueColor!\033[0m"},
+		{"Truecolor Fg Bold", []*StyledText{{Label: "TrueColor!", FgCol: &Col{Id: 256, Rgb: Rgb{R: 128, G: 127, B: 126}}, Style: Bold}}, "\033[0;1;38;2;128;127;126mTrueColor!\033[0m"},
+		{"Truecolor Bg", []*StyledText{{Label: "TrueColor!", BgCol: &Col{Id: 256, Rgb: Rgb{R: 128, G: 127, B: 126}}}}, "\033[0;48;2;128;127;126mTrueColor!\033[0m"},
+		{"Truecolor Bg Bold", []*StyledText{{Label: "TrueColor!", BgCol: &Col{Id: 256, Rgb: Rgb{R: 128, G: 127, B: 126}}, Style: Bold}}, "\033[0;1;48;2;128;127;126mTrueColor!\033[0m"},
+		{"Truecolor Mixed", []*StyledText{{Label: "TrueColor!", FgCol: &Col{Id: 256, Rgb: Rgb{R: 90, G: 91, B: 92}}, BgCol: &Col{Id: 256, Rgb: Rgb{R: 128, G: 127, B: 126}}, Style: Bold | Faint | Underlined | Strikethrough | Italic | Invisible | Blinking | Inversed}}, "\033[0;1;2;3;4;5;7;8;9;38;2;90;91;92;48;2;128;127;126mTrueColor!\033[0m"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := String(tt.input)
+			is2.Equal(got, tt.want)
+		})
+	}
+}
+
+func TestTruncate(t *testing.T) {
+	is2 := is.New(t)
+	tests := []struct {
+		name     string
+		input    string
+		maxChars int
+		want     string
+		wantErr  bool
+	}{
+		{"No formatting", "Hello World", 11, "Hello World", false},
+		{"No formatting truncated", "Hello World", 5, "Hello", false},
+		{"No formatting many chars", "Hello World", 50, "Hello World", false},
+		{"Black", "\u001b[0;30mHello World\033[0m", 5, "\u001B[0;30mHello\u001B[0m", false},
+		{"Red Bold", "\u001b[0;1;31mHello World\033[0m", 5, "\033[0;1;31mHello\033[0m", false},
+		{"Red Bold & Black", "\u001b[0;1;31mI am Red\033[0m\u001B[0;30mI am Black\u001B[0m", 12, "\u001B[0;1;31mI am Red\u001B[0m\u001B[0;30mI am\u001B[0m", false},
+		{"Red Bold & text & Black", "\u001b[0;1;31mI am Red\033[0m and \u001B[0;30mI am Black\u001B[0m", 17, "\u001B[0;1;31mI am Red\u001B[0m and \u001B[0;30mI am\u001B[0m", false},
+		{"Emoji", "\u001B[0;1;31m😀👩🏽‍🔧\u001B[0m", 1, "\u001B[0;1;31m😀\u001B[0m", false},
+		{"Emoji 2", "\u001B[0;1;31m😀👩🏽‍🔧\u001B[0m", 2, "\u001B[0;1;31m😀👩🏽‍🔧\u001B[0m", false},
+		{"Emoji 3", "\u001B[0;1;31m😀👩🏽‍🔧😀\u001B[0m", 2, "\u001B[0;1;31m😀👩🏽‍🔧\u001B[0m", false},
+		{"Bad", "\033[44;32;12", 10, "", true},
+
+		//{"Spaces", "  ", "  ", "", false},
+		//{"Bad code", "\u001b[1  ", "", "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Truncate(tt.input, tt.maxChars)
+			is2.Equal(err != nil, tt.wantErr)
+			is2.Equal(got, tt.want)
+		})
+	}
+}
+
+func TestCleanse(t *testing.T) {
+	is2 := is.New(t)
+	tests := []struct {
+		name    string
+		input   string
+		want    string
+		wantErr bool
+	}{
+		{"Blank", "", "", false},
+		{"No formatting", "Hello World", "Hello World", false},
+		{"ANSI16 Fg", "\033[0;31mRed\033[0m", "Red", false},
+		{"Black", "\u001b[0;30mHello World\033[0m", "Hello World", false},
+		{"Red Bold & Black", "\u001b[0;1;31mI am Red\033[0m & \u001B[0;30mI am Black\u001B[0m", "I am Red & I am Black", false},
+		{"Red All the styles", "\u001b[0;1;2;3;4;5;7;8;9;31mI am Red\033[0m", "I am Red", false},
+		{"Emoji", "\u001B[0;1;31m😀\u001B[0m", "😀", false},
+		{"Emoji 2", "\u001B[0;1;31m😀👩🏽‍🔧\u001B[0m", "😀👩🏽‍🔧", false},
+		{"Bad", "\033[44;32;12", "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Cleanse(tt.input)
+			is2.Equal(err != nil, tt.wantErr)
+			is2.Equal(got, tt.want)
+		})
+	}
+}

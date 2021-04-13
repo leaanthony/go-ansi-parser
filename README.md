@@ -17,6 +17,8 @@ into a slice of structs that represent styled text. Features:
   * Can parse ANSI 16, 256 and TrueColor
   * Supports all styles: Regular, Bold, Faint, Italic, Blinking, Inversed, Invisible, Underlined, Strikethrough
   * Provides RGB, Hex, HSL, ANSI ID and Name for parsed colours
+  * Truncation - works with emoji and grapheme clusters 
+  * Cleanse - removes the ansi escape codes
   * Configurable colour map for customisation
   * 100% Test Coverage
 
@@ -27,12 +29,13 @@ go get github.com/leaanthony/go-ansi-parser
 
 ## Usage
 
+### Parse
 ```go
-var text, err = ansi.Parse("\u001b[1;31;40mHello World\033[0m")
+text, err := ansi.Parse("\u001b[1;31;40mHello World\033[0m")
 
 // is the equivalent of...
 
-var text = []*ansi.StyledText{
+text := []*ansi.StyledText{
     {
         Label: "Hello World",
         FgCol: &ansi.Col{
@@ -53,4 +56,19 @@ var text = []*ansi.StyledText{
     },
 }
 ```
+### Truncating
+```go
+shorter, err := ansi.Truncate("\u001b[1;31;40mHello\033[0m \u001b[0;30mWorld!\033[0m", 8)
 
+// is the equivalent of...
+
+shorter := "\u001b[1;31;40mHello\033[0m \u001b[0;30mWo\033[0m"
+```
+### Cleanse
+```go
+cleaner, err := ansi.Cleanse("\u001b[1;31;40mHello\033[0m \u001b[0;30mWorld!\033[0m")
+
+// is the equivalent of...
+
+cleaner := "Hello World!"
+```

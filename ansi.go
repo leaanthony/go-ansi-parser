@@ -2,6 +2,7 @@ package ansi
 
 import (
 	"fmt"
+	"github.com/rivo/uniseg"
 	"strconv"
 	"strings"
 )
@@ -35,6 +36,74 @@ type StyledText struct {
 	FgCol *Col
 	BgCol *Col
 	Style TextStyle
+}
+
+func (s *StyledText) styleToParams() []string {
+	var params []string
+	if s.Bold() {
+		params = append(params, "1")
+	}
+	if s.Faint() {
+		params = append(params, "2")
+	}
+	if s.Italic() {
+		params = append(params, "3")
+	}
+	if s.Underlined() {
+		params = append(params, "4")
+	}
+	if s.Blinking() {
+		params = append(params, "5")
+	}
+	if s.Inversed() {
+		params = append(params, "7")
+	}
+	if s.Invisible() {
+		params = append(params, "8")
+	}
+	if s.Strikethrough() {
+		params = append(params, "9")
+	}
+	if s.FgCol != nil {
+		// Do we have an ID?
+		switch true {
+		case s.FgCol.Id < 16:
+			offset := 30
+			id := s.FgCol.Id
+			// Adjust when bold has been applied to the id
+			if s.Bold() && id > 7 && id < 16 {
+				id -= 8
+			}
+			params = append(params, fmt.Sprintf("%d", id+offset))
+		case s.FgCol.Id < 256:
+			params = append(params, []string{"38", "5", fmt.Sprintf("%d", s.FgCol.Id)}...)
+		case s.FgCol.Id == 256:
+			r := fmt.Sprintf("%d", s.FgCol.Rgb.R)
+			g := fmt.Sprintf("%d", s.FgCol.Rgb.G)
+			b := fmt.Sprintf("%d", s.FgCol.Rgb.B)
+			params = append(params, []string{"38", "2", r, g, b}...)
+		}
+	}
+	if s.BgCol != nil {
+		// Do we have an ID?
+		switch true {
+		case s.BgCol.Id < 16:
+			params = append(params, fmt.Sprintf("%d", s.BgCol.Id+40))
+		case s.BgCol.Id < 256:
+			params = append(params, []string{"48", "5", fmt.Sprintf("%d", s.BgCol.Id)}...)
+		case s.BgCol.Id == 256:
+			r := fmt.Sprintf("%d", s.BgCol.Rgb.R)
+			g := fmt.Sprintf("%d", s.BgCol.Rgb.G)
+			b := fmt.Sprintf("%d", s.BgCol.Rgb.B)
+			params = append(params, []string{"48", "2", r, g, b}...)
+		}
+	}
+	return params
+}
+
+func (s *StyledText) String() string {
+	params := strings.Join(s.styleToParams(), ";")
+	return "\033[0;" + params + "m" + s.Label + "\033[0m"
 }
 
 // Bold will return true if the text has a Bold style
@@ -261,10 +330,10 @@ func Parse(input string) ([]*StyledText, error) {
 				skip = 4
 				colvalue := fmt.Sprintf("#%02x%02x%02x", r, g, b)
 				if param == "38" {
-					currentStyledText.FgCol = &Col{Hex: colvalue, Rgb: Rgb{r, g, b}}
+					currentStyledText.FgCol = &Col{Id: 256, Hex: colvalue, Rgb: Rgb{r, g, b}}
 					continue
 				}
-				currentStyledText.BgCol = &Col{Hex: colvalue, Rgb: Rgb{r, g, b}}
+				currentStyledText.BgCol = &Col{Id: 256, Hex: colvalue, Rgb: Rgb{r, g, b}}
 			default:
 				return nil, invalid
 			}
@@ -274,4 +343,66 @@ func Parse(input string) ([]*StyledText, error) {
 
 func HasEscapeCodes(input string) bool {
 	return strings.IndexAny(input, "\033[") != -1
+}
+
+func String(input []*StyledText) string {
+	var result strings.Builder
+	for _, text := range input {
+		params := text.styleToParams()
+		if len(params) == 0 {
+			result.WriteString(text.Label)
+			continue
+		}
+		result.WriteString(text.String())
+
+		//result.WriteString("\033[0;")
+		//result.WriteString(strings.Join(params, ";"))
+		//result.WriteString("m")
+		//result.WriteString(text.Label)
+		//result.WriteString("\033[0m")
+	}
+	return result.String()
+}
+
+func Truncate(input string, maxChars int) (string, error) {
+	parsed, err := Parse(input)
+	if err != nil {
+		return "", err
+	}
+	charsLeft := maxChars
+	var result []*StyledText
+	for _, element := range parsed {
+		userPerceivedChars := uniseg.GraphemeClusterCount(element.Label)
+		if userPerceivedChars >= charsLeft {
+			var newLabel []rune
+			graphemes := uniseg.NewGraphemes(element.Label)
+			for graphemes.Next() {
+				newLabel = append(newLabel, graphemes.Runes()...)
+				charsLeft--
+				if charsLeft == 0 {
+					element.Label = string(newLabel)
+					result = append(result, element)
+					return String(result), nil
+				}
+			}
+		}
+		result = append(result, element)
+		charsLeft -= userPerceivedChars
+	}
+	return String(result), nil
+}
+
+func Cleanse(input string) (string, error) {
+	if input == "" {
+		return "", nil
+	}
+	parsed, err := Parse(input)
+	if err != nil {
+		return "", err
+	}
+	var result strings.Builder
+	for _, element := range parsed {
+		result.WriteString(element.Label)
+	}
+	return result.String(), nil
 }
