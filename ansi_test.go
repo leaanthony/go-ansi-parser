@@ -490,3 +490,30 @@ func TestCleanse(t *testing.T) {
 		})
 	}
 }
+
+func TestLength(t *testing.T) {
+	is2 := is.New(t)
+	tests := []struct {
+		name    string
+		input   string
+		want    int
+		wantErr bool
+	}{
+		{"Blank", "", 0, false},
+		{"No formatting", "Hello World", 11, false},
+		{"ANSI16 Fg", "\033[0;31mRed\033[0m", 3, false},
+		{"Zero chats", "\u001b[0;30m\033[0m", 0, false},
+		{"Red Bold & Black", "\u001b[0;1;31mI am Red\033[0m & \u001B[0;30mI am Black\u001B[0m", 21, false},
+		{"Red All the styles", "\u001b[0;1;2;3;4;5;7;8;9;31mI am Red\033[0m", 8, false},
+		{"Emoji", "\u001B[0;1;31m😀\u001B[0m", 1, false},
+		{"Emoji 2", "\u001B[0;1;31m😀👩🏽‍🔧\u001B[0m", 2, false},
+		{"Bad", "\033[44;32;12", -1, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Length(tt.input)
+			is2.Equal(err != nil, tt.wantErr)
+			is2.Equal(got, tt.want)
+		})
+	}
+}

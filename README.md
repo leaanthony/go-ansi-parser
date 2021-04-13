@@ -17,7 +17,8 @@ into a slice of structs that represent styled text. Features:
   * Can parse ANSI 16, 256 and TrueColor
   * Supports all styles: Regular, Bold, Faint, Italic, Blinking, Inversed, Invisible, Underlined, Strikethrough
   * Provides RGB, Hex, HSL, ANSI ID and Name for parsed colours
-  * Truncation - works with emoji and grapheme clusters 
+  * Truncation - works with emojis and grapheme clusters 
+  * Length - works with emojis and grapheme clusters
   * Cleanse - removes the ansi escape codes
   * Configurable colour map for customisation
   * 100% Test Coverage
@@ -71,4 +72,15 @@ cleaner, err := ansi.Cleanse("\u001b[1;31;40mHello\033[0m \u001b[0;30mWorld!\033
 // is the equivalent of...
 
 cleaner := "Hello World!"
+```
+### Length
+```go
+length, err := ansi.Length("\u001b[1;31;40mHello\033[0m \u001b[0;30mWorld!\033[0m")
+
+// is the equivalent of...
+
+length := 12
+
+// Works with grapheme clusters and emoji
+length, err := ansi.Length("\u001b[1;31;40m👩🏽‍🔧😎\033[0m") // 2
 ```

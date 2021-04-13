@@ -406,3 +406,19 @@ func Cleanse(input string) (string, error) {
 	}
 	return result.String(), nil
 }
+
+func Length(input string) (int, error) {
+	if input == "" {
+		return 0, nil
+	}
+	parsed, err := Parse(input)
+	if err != nil {
+		return -1, err
+	}
+	var result int
+	for _, element := range parsed {
+		userPerceivedChars := uniseg.GraphemeClusterCount(element.Label)
+		result += userPerceivedChars
+	}
+	return result, nil
+}
