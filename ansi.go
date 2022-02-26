@@ -240,7 +240,7 @@ func Parse(input string) ([]*StyledText, error) {
 				continue
 			}
 			switch param {
-			case "0":
+			case "0", "":
 				colourMap = ColourMap["Regular"]
 				currentStyledText.Style = 0
 				currentStyledText.FgCol = nil

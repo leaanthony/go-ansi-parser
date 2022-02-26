@@ -160,6 +160,7 @@ func TestParseAnsi16SingleBGColour(t *testing.T) {
 		{"Emoji", "😀👩🏽‍🔧", "😀👩🏽‍🔧", "", false},
 		{"Spaces", "  ", "  ", "", false},
 		{"Bad code", "\u001b[1  ", "", "", true},
+		{"No colour", "\033[m\033[40m    \033[0m", "    ", "", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
