@@ -1,5 +1,6 @@
 package ansi
 
+// ParseOption specifies parse option.
 type ParseOption struct {
 	ignoreUnexpectedCode bool
 	ansiForegroundColor  string
