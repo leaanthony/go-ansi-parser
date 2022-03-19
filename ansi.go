@@ -30,6 +30,13 @@ const (
 	Strikethrough TextStyle = 1 << 7
 )
 
+const (
+	// Default colors uses foreground color codes [30-37].
+	// See ColourMap and case for background colors.
+	defaultForegroundColor = "37"
+	defaultBackgroundColor = "30"
+)
+
 // StyledText represents a single formatted string
 type StyledText struct {
 	Label string
@@ -183,7 +190,7 @@ var ColourMap = map[string]map[string]*Col{
 // Parse will convert an ansi encoded string and return
 // a slice of StyledText structs that represent the text.
 // If parsing is unsuccessful, an error is returned.
-func Parse(input string) ([]*StyledText, error) {
+func Parse(input string, options ...ParseOption) ([]*StyledText, error) {
 	var result []*StyledText
 	invalid := fmt.Errorf("invalid ansi string")
 	missingTerminator := fmt.Errorf("missing escape terminator 'm'")
@@ -334,17 +341,53 @@ func Parse(input string) ([]*StyledText, error) {
 					continue
 				}
 				currentStyledText.BgCol = &Col{Id: 256, Hex: colvalue, Rgb: Rgb{r, g, b}}
+			case "39":
+				// Lookup for default foreground color.
+				foregroundColor := colourMap[defaultForegroundColor]
+				for _, option := range options {
+					if option.ansiForegroundColor != "" {
+						foregroundColor = colourMap[option.ansiForegroundColor]
+						break
+					}
+				}
+
+				// Set selected foreground color.
+				currentStyledText.FgCol = foregroundColor
+			case "49":
+				// Lookup for default background color.
+				backgroundColor := colourMap[defaultBackgroundColor]
+				for _, option := range options {
+					if option.ansiBackgroundColor != "" {
+						backgroundColor = colourMap[option.ansiBackgroundColor]
+						break
+					}
+				}
+
+				// Set selected background color.
+				currentStyledText.BgCol = backgroundColor
 			default:
-				return nil, invalid
+				// Unexpected codes may be ignored.
+				unexpectedCodeIgnored := false
+				for _, option := range options {
+					if option.ignoreUnexpectedCode {
+						unexpectedCodeIgnored = true
+						break
+					}
+				}
+				if !unexpectedCodeIgnored {
+					return nil, invalid
+				}
 			}
 		}
 	}
 }
 
+// HasEscapeCodes tests that input has escape codes.
 func HasEscapeCodes(input string) bool {
 	return strings.IndexAny(input, "\033[") != -1
 }
 
+// String builds an ANSI string for specified StyledText slice.
 func String(input []*StyledText) string {
 	var result strings.Builder
 	for _, text := range input {
@@ -364,8 +407,9 @@ func String(input []*StyledText) string {
 	return result.String()
 }
 
-func Truncate(input string, maxChars int) (string, error) {
-	parsed, err := Parse(input)
+// Truncate truncates text to length but preserves control symbols in ANSI string.
+func Truncate(input string, maxChars int, options ...ParseOption) (string, error) {
+	parsed, err := Parse(input, options...)
 	if err != nil {
 		return "", err
 	}
@@ -392,11 +436,12 @@ func Truncate(input string, maxChars int) (string, error) {
 	return String(result), nil
 }
 
-func Cleanse(input string) (string, error) {
+// Cleanse removes ANSI control symbols from the string.
+func Cleanse(input string, options ...ParseOption) (string, error) {
 	if input == "" {
 		return "", nil
 	}
-	parsed, err := Parse(input)
+	parsed, err := Parse(input, options...)
 	if err != nil {
 		return "", err
 	}
@@ -407,11 +452,12 @@ func Cleanse(input string) (string, error) {
 	return result.String(), nil
 }
 
-func Length(input string) (int, error) {
+// Length calculates count of user-perceived characters in ANSI string.
+func Length(input string, options ...ParseOption) (int, error) {
 	if input == "" {
 		return 0, nil
 	}
-	parsed, err := Parse(input)
+	parsed, err := Parse(input, options...)
 	if err != nil {
 		return -1, err
 	}
