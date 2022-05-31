@@ -105,6 +105,39 @@ func TestParseAnsi16SingleColour(t *testing.T) {
 		{"Purple Bold", "\u001b[1;35m👩🏽‍🔧\u001B[0m", "👩🏽‍🔧", "Fuchsia", false},
 		{"Cyan Bold", "\033[1;36m😀\033[0m", "😀", "Aqua", false},
 		{"White Bold", "\u001b[1;37m[0;37m\033[0m", "[0;37m", "White", false},
+		{"Black Bold & Bright", "\u001b[1;90mHello World\033[0m", "Hello World", "Grey", false},
+		{"Red Bold & Bright", "\u001b[1;91mHello World\033[0m", "Hello World", "Red", false},
+		{"Green Bold & Bright", "\u001b[1;92mGreen\033[0m", "Green", "Lime", false},
+		{"Yellow Bold & Bright", "\u001b[1;93m😀\033[0m", "😀", "Yellow", false},
+		{"Blue Bold & Bright", "\u001b[1;94m123\033[0m", "123", "Blue", false},
+		{"Purple Bold & Bright", "\u001b[1;95m👩🏽‍🔧\u001B[0m", "👩🏽‍🔧", "Fuchsia", false},
+		{"Cyan Bold & Bright", "\033[1;96m😀\033[0m", "😀", "Aqua", false},
+		{"White Bold & Bright", "\u001b[1;97m[0;37m\033[0m", "[0;37m", "White", false},
+		{"Black Bright", "\u001b[90mHello World\033[0m", "Hello World", "Grey", false},
+		{"Red Bright", "\u001b[91mHello World\033[0m", "Hello World", "Red", false},
+		{"Green Bright", "\u001b[92mGreen\033[0m", "Green", "Lime", false},
+		{"Yellow Bright", "\u001b[93m😀\033[0m", "😀", "Yellow", false},
+		{"Blue Bright", "\u001b[94m123\033[0m", "123", "Blue", false},
+		{"Purple Bright", "\u001b[95m👩🏽‍🔧\u001B[0m", "👩🏽‍🔧", "Fuchsia", false},
+		{"Cyan Bright", "\033[96m😀\033[0m", "😀", "Aqua", false},
+		{"White Bright", "\u001b[97m[0;37m\033[0m", "[0;37m", "White", false},
+		{"Black Bold & Bright Background", "\u001b[1;100mHello World\033[0m", "Hello World", "Grey", false},
+		{"Red Bold & Bright Background", "\u001b[1;101mHello World\033[0m", "Hello World", "Red", false},
+		{"Green Bold & Bright Background", "\u001b[1;102mGreen\033[0m", "Green", "Lime", false},
+		{"Yellow Bold & Bright Background", "\u001b[1;103m😀\033[0m", "😀", "Yellow", false},
+		{"Blue Bold & Bright Background", "\u001b[1;104m123\033[0m", "123", "Blue", false},
+		{"Purple Bold & Bright Background", "\u001b[1;105m👩🏽‍🔧\u001B[0m", "👩🏽‍🔧", "Fuchsia", false},
+		{"Cyan Bold & Bright Background", "\033[1;106m😀\033[0m", "😀", "Aqua", false},
+		{"White Bold & Bright Background", "\u001b[1;107m[0;37m\033[0m", "[0;37m", "White", false},
+		{"Black Bright Background", "\u001b[100mHello World\033[0m", "Hello World", "Grey", false},
+		{"Red Bright Background", "\u001b[101mHello World\033[0m", "Hello World", "Red", false},
+		{"Green Bright Background", "\u001b[102mGreen\033[0m", "Green", "Lime", false},
+		{"Yellow Bright Background", "\u001b[103m😀\033[0m", "😀", "Yellow", false},
+		{"Blue Bright Background", "\u001b[104m123\033[0m", "123", "Blue", false},
+		{"Purple Bright Background", "\u001b[105m👩🏽‍🔧\u001B[0m", "👩🏽‍🔧", "Fuchsia", false},
+		{"Cyan Bright Background", "\033[106m😀\033[0m", "😀", "Aqua", false},
+		{"White Bright Background", "\u001b[107m[0;37m\033[0m", "[0;37m", "White", false},
+
 		{"Blank", "", "", "", false},
 		{"Emoji", "😀👩🏽‍🔧", "😀👩🏽‍🔧", "", false},
 		{"Spaces", "  ", "  ", "", false},
@@ -121,8 +154,11 @@ func TestParseAnsi16SingleColour(t *testing.T) {
 			is2.Equal(len(got), expectedLength)
 			if expectedLength == 1 {
 				if len(tt.wantColor) > 0 {
-					is2.True(got[0].FgCol != nil)
-					is2.Equal(got[0].FgCol.Name, tt.wantColor)
+					if got[0].FgCol != nil {
+						is2.Equal(got[0].FgCol.Name, tt.wantColor)
+					} else {
+						is2.Equal(got[0].BgCol.Name, tt.wantColor)
+					}
 				}
 			}
 		})

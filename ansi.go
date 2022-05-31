@@ -28,6 +28,8 @@ const (
 	Underlined TextStyle = 1 << 6
 	// Strikethrough Style
 	Strikethrough TextStyle = 1 << 7
+	// Bright Style
+	Bright TextStyle = 1 << 8
 )
 
 type ColourMode int
@@ -95,6 +97,9 @@ func (s *StyledText) styleToParams() []string {
 			if s.Bold() && id > 7 && id < 16 {
 				id -= 8
 			}
+			if s.Bright() {
+				offset = 90
+			}
 			params = append(params, fmt.Sprintf("%d", id+offset))
 		case TwoFiveSix:
 			params = append(params, []string{"38", "5", fmt.Sprintf("%d", s.FgCol.Id)}...)
@@ -109,7 +114,11 @@ func (s *StyledText) styleToParams() []string {
 		// Do we have an ID?
 		switch s.ColourMode {
 		case Default:
-			params = append(params, fmt.Sprintf("%d", s.BgCol.Id+40))
+			offset := 40
+			if s.Bright() {
+				offset = 100
+			}
+			params = append(params, fmt.Sprintf("%d", s.BgCol.Id+offset))
 		case TwoFiveSix:
 			params = append(params, []string{"48", "5", fmt.Sprintf("%d", s.BgCol.Id)}...)
 		case TrueColour:
@@ -167,27 +176,64 @@ func (s *StyledText) Strikethrough() bool {
 	return s.Style&Strikethrough == Strikethrough
 }
 
+// Bright will return true if the text has a Bright style
+func (s *StyledText) Bright() bool {
+	return s.Style&Bright == Bright
+}
+
 // ColourMap maps ansi identifiers to a colour
 var ColourMap = map[string]map[string]*Col{
 	"Regular": {
-		"30": Cols[0],
-		"31": Cols[1],
-		"32": Cols[2],
-		"33": Cols[3],
-		"34": Cols[4],
-		"35": Cols[5],
-		"36": Cols[6],
-		"37": Cols[7],
+		"30":  Cols[0],
+		"31":  Cols[1],
+		"32":  Cols[2],
+		"33":  Cols[3],
+		"34":  Cols[4],
+		"35":  Cols[5],
+		"36":  Cols[6],
+		"37":  Cols[7],
+		"90":  Cols[8],
+		"91":  Cols[9],
+		"92":  Cols[10],
+		"93":  Cols[11],
+		"94":  Cols[12],
+		"95":  Cols[13],
+		"96":  Cols[14],
+		"97":  Cols[15],
+		"100": Cols[8],
+		"101": Cols[9],
+		"102": Cols[10],
+		"103": Cols[11],
+		"104": Cols[12],
+		"105": Cols[13],
+		"106": Cols[14],
+		"107": Cols[15],
 	},
 	"Bold": {
-		"30": Cols[8],
-		"31": Cols[9],
-		"32": Cols[10],
-		"33": Cols[11],
-		"34": Cols[12],
-		"35": Cols[13],
-		"36": Cols[14],
-		"37": Cols[15],
+		"30":  Cols[8],
+		"31":  Cols[9],
+		"32":  Cols[10],
+		"33":  Cols[11],
+		"34":  Cols[12],
+		"35":  Cols[13],
+		"36":  Cols[14],
+		"37":  Cols[15],
+		"90":  Cols[8],
+		"91":  Cols[9],
+		"92":  Cols[10],
+		"93":  Cols[11],
+		"94":  Cols[12],
+		"95":  Cols[13],
+		"96":  Cols[14],
+		"97":  Cols[15],
+		"100": Cols[8],
+		"101": Cols[9],
+		"102": Cols[10],
+		"103": Cols[11],
+		"104": Cols[12],
+		"105": Cols[13],
+		"106": Cols[14],
+		"107": Cols[15],
 	},
 	"Faint": {
 		"30": Cols[0],
@@ -290,6 +336,12 @@ func Parse(input string, options ...ParseOption) ([]*StyledText, error) {
 				currentStyledText.Style |= Strikethrough
 			case "30", "31", "32", "33", "34", "35", "36", "37":
 				currentStyledText.FgCol = colourMap[param]
+			case "90", "91", "92", "93", "94", "95", "96", "97":
+				currentStyledText.FgCol = colourMap[param]
+				currentStyledText.Style |= Bright
+			case "100", "101", "102", "103", "104", "105", "106", "107":
+				currentStyledText.BgCol = colourMap[param]
+				currentStyledText.Style |= Bright
 			case "40", "41", "42", "43", "44", "45", "46", "47":
 				bgcol := "3" + param[1:] // Equivalent of -10
 				currentStyledText.BgCol = colourMap[bgcol]
