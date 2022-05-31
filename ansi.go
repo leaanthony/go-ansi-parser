@@ -94,7 +94,7 @@ func (s *StyledText) styleToParams() []string {
 			offset := 30
 			id := s.FgCol.Id
 			// Adjust when bold has been applied to the id
-			if s.Bold() && id > 7 && id < 16 {
+			if (s.Bold() || s.Bright()) && id > 7 && id < 16 {
 				id -= 8
 			}
 			if s.Bright() {
@@ -114,11 +114,16 @@ func (s *StyledText) styleToParams() []string {
 		// Do we have an ID?
 		switch s.ColourMode {
 		case Default:
+			id := s.BgCol.Id
 			offset := 40
 			if s.Bright() {
 				offset = 100
 			}
-			params = append(params, fmt.Sprintf("%d", s.BgCol.Id+offset))
+			// Adjust when bold has been applied to the id
+			if (s.Bold() || s.Bright()) && id > 7 && id < 16 {
+				id -= 8
+			}
+			params = append(params, fmt.Sprintf("%d", id+offset))
 		case TwoFiveSix:
 			params = append(params, []string{"48", "5", fmt.Sprintf("%d", s.BgCol.Id)}...)
 		case TrueColour:
