@@ -375,7 +375,7 @@ func TestParseAnsiBG256(t *testing.T) {
 		{"Bad No of Params", "\u001B[0;1;48;5mGrey93\u001B[0m", nil, true},
 		{"Bad Params", "\u001B[0;1;48;fivemGrey93\u001B[0m", nil, true},
 		{"Bad Params 2", "\u001B[0;1;48;3mGrey93\u001B[0m", nil, true},
-		{"Bad Params 2", "\u001B[0;1;49;3mGrey93\u001B[0m", nil, true},
+		{"Bad Params 2", "\u001B[0;1;50;3mGrey93\u001B[0m", nil, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -433,6 +433,61 @@ func TestParseAnsiTrueColor(t *testing.T) {
 				if w.BgCol != nil {
 					is2.Equal(got[index].BgCol.Hex, w.BgCol.Hex)
 					is2.Equal(got[index].BgCol.Rgb, w.BgCol.Rgb)
+				}
+				is2.Equal(got[index].Style, w.Style)
+			}
+		})
+	}
+}
+
+func TestParseAnsiWithOptions(t *testing.T) {
+	is2 := is.New(t)
+	tests := []struct {
+		name    string
+		input   string
+		options []ParseOption
+		want    []*StyledText
+		wantErr bool
+	}{
+		{
+			"Unexpected code errored", "\u001b[0;99mHello World\033[0m",
+			nil, nil, true,
+		},
+		{
+			"Unexpected code ignored", "\u001b[0;99mHello World\033[0m",
+			[]ParseOption{WithIgnoreInvalidCodes()},
+			[]*StyledText{{Label: "Hello World"}}, false,
+		},
+		{
+			"Foreground code default", "\u001b[0;39mHello World\033[0m", nil,
+			[]*StyledText{{Label: "Hello World", FgCol: Cols[7]}}, false,
+		},
+		{
+			"Foreground code specified", "\u001b[0;39mHello World\033[0m",
+			[]ParseOption{WithDefaultForegroundColor("35")},
+			[]*StyledText{{Label: "Hello World", FgCol: Cols[5]}}, false,
+		},
+		{
+			"Background code default", "\u001b[0;49mHello World\033[0m", nil,
+			[]*StyledText{{Label: "Hello World", BgCol: Cols[0]}}, false,
+		},
+		{
+			"Background code specified", "\u001b[0;49mHello World\033[0m",
+			[]ParseOption{WithDefaultBackgroundColor("36")},
+			[]*StyledText{{Label: "Hello World", BgCol: Cols[6]}}, false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Parse(tt.input, tt.options...)
+			is2.Equal(err != nil, tt.wantErr)
+			for index, w := range tt.want {
+				is2.Equal(got[index].Label, w.Label)
+				if w.FgCol != nil {
+					is2.Equal(got[index].FgCol.Name, w.FgCol.Name)
+				}
+				if w.BgCol != nil {
+					is2.Equal(got[index].BgCol.Name, w.BgCol.Name)
 				}
 				is2.Equal(got[index].Style, w.Style)
 			}
