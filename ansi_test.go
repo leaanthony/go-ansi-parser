@@ -105,7 +105,7 @@ func TestParseAnsi16SingleColour(t *testing.T) {
 		{"Purple Bold", "\u001b[1;35m👩🏽‍🔧\u001B[0m", "👩🏽‍🔧", "Fuchsia", false},
 		{"Cyan Bold", "\033[1;36m😀\033[0m", "😀", "Aqua", false},
 		{"White Bold", "\u001b[1;37m[0;37m\033[0m", "[0;37m", "White", false},
-		{"Blank", "", "", "", true},
+		{"Blank", "", "", "", false},
 		{"Emoji", "😀👩🏽‍🔧", "😀👩🏽‍🔧", "", false},
 		{"Spaces", "  ", "  ", "", false},
 		{"Bad code", "\u001b[1  ", "", "", true},
@@ -156,7 +156,7 @@ func TestParseAnsi16SingleBGColour(t *testing.T) {
 		{"Cyan Bold", "\033[1;46m😀\033[0m", "😀", "Aqua", false},
 		{"White Bold", "\u001b[1;47m[0;47m\033[0m", "[0;47m", "White", false},
 		{"Pre text", "Hello\u001b[0m", "Hello", "", false},
-		{"Blank", "", "", "", true},
+		{"Blank", "", "", "", false},
 		{"Emoji", "😀👩🏽‍🔧", "😀👩🏽‍🔧", "", false},
 		{"Spaces", "  ", "  ", "", false},
 		{"Bad code", "\u001b[1  ", "", "", true},
@@ -296,6 +296,64 @@ func TestParseAnsi256(t *testing.T) {
 	}
 }
 
+func TestRoundtripAnsi16(t *testing.T) {
+	is2 := is.New(t)
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{"No formatting", "Hello World"},
+		{"Black", "\u001b[0;30mHello World\033[0m"},
+		{"Red", "\u001b[0;31mHello World\033[0m"},
+		{"Green", "\u001b[0;32mGreen\033[0m"},
+		{"Yellow", "\u001b[0;33m😀\033[0m"},
+		{"Blue", "\u001b[0;34m123\033[0m"},
+		{"Purple", "\u001b[0;35m👩🏽‍🔧\u001B[0m"},
+		{"Cyan", "\033[0;36m😀\033[0m"},
+		{"White", "\u001b[0;37m[0;37m\033[0m"},
+		{"Black Bold", "\u001b[0;1;30mHello World\033[0m"},
+		{"Red Bold", "\u001b[0;1;31mHello World\033[0m"},
+		{"Green Bold", "\u001b[0;1;32mGreen\033[0m"},
+		{"Yellow Bold", "\u001b[0;1;33m😀\033[0m"},
+		{"Blue Bold", "\u001b[0;1;34m123\033[0m"},
+		{"Purple Bold", "\u001b[0;1;35m👩🏽‍🔧\u001B[0m"},
+		{"Cyan Bold", "\033[0;1;36m😀\033[0m"},
+		{"White Bold", "\u001b[0;1;37m[0;37m\033[0m"},
+		{"Blank", ""},
+		{"Emoji", "😀👩🏽‍🔧"},
+		{"Spaces", "  "},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Parse(tt.input)
+			is2.NoErr(err)
+			output := String(got)
+			is2.Equal(output, tt.input)
+		})
+	}
+}
+
+func TestRoundtripAnsi256(t *testing.T) {
+	is2 := is.New(t)
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{"Grey93 & DarkViolet", "\u001B[0;38;5;255mGrey93\u001B[0m\u001B[0;38;5;128mDarkViolet\u001B[0m"},
+		{"Grey93 Bold & DarkViolet Italic", "\u001B[0;1;38;5;255mGrey93\u001B[0m\u001B[0;3;38;5;128mDarkViolet\u001B[0m"},
+		{"White", "\u001B[0;38;5;15mWhite\u001B[0m\u001B[0;3;38;5;128mDarkViolet\u001B[0m"},
+		{"White Bold", "\u001B[0;1;38;5;15mWhite\u001B[0m\u001B[0;3;38;5;128mDarkViolet\u001B[0m"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Parse(tt.input)
+			is2.NoErr(err)
+			output := String(got)
+			is2.Equal(output, tt.input)
+		})
+	}
+}
+
 func TestParseAnsiBG256(t *testing.T) {
 	is2 := is.New(t)
 	tests := []struct {
@@ -414,15 +472,15 @@ func TestString(t *testing.T) {
 		{"ANSI16 Fg Bold & Italic", []*StyledText{{Label: "Red", FgCol: Cols[1], Style: Bold | Italic}}, "\033[0;1;3;31mRed\033[0m"},
 		{"ANSI16 Bg", []*StyledText{{Label: "Black", BgCol: Cols[0]}}, "\033[0;40mBlack\033[0m"},
 		{"ANSI16 Mixed", []*StyledText{{Label: "Mixed", FgCol: Cols[1], BgCol: Cols[0]}}, "\033[0;31;40mMixed\033[0m"},
-		{"ANSI256 Fg", []*StyledText{{Label: "Dark Blue", FgCol: Cols[18]}}, "\033[0;38;5;18mDark Blue\033[0m"},
-		{"ANSI256 Fg Bold", []*StyledText{{Label: "Dark Blue", FgCol: Cols[18], Style: Bold}}, "\033[0;1;38;5;18mDark Blue\033[0m"},
-		{"ANSI256 Bg", []*StyledText{{Label: "Dark Blue", BgCol: Cols[18]}}, "\033[0;48;5;18mDark Blue\033[0m"},
-		{"ANSI256 Bg Bold", []*StyledText{{Label: "Dark Blue", BgCol: Cols[18], Style: Bold}}, "\033[0;1;48;5;18mDark Blue\033[0m"},
-		{"Truecolor Fg", []*StyledText{{Label: "TrueColor!", FgCol: &Col{Id: 256, Rgb: Rgb{R: 128, G: 127, B: 126}}}}, "\033[0;38;2;128;127;126mTrueColor!\033[0m"},
-		{"Truecolor Fg Bold", []*StyledText{{Label: "TrueColor!", FgCol: &Col{Id: 256, Rgb: Rgb{R: 128, G: 127, B: 126}}, Style: Bold}}, "\033[0;1;38;2;128;127;126mTrueColor!\033[0m"},
-		{"Truecolor Bg", []*StyledText{{Label: "TrueColor!", BgCol: &Col{Id: 256, Rgb: Rgb{R: 128, G: 127, B: 126}}}}, "\033[0;48;2;128;127;126mTrueColor!\033[0m"},
-		{"Truecolor Bg Bold", []*StyledText{{Label: "TrueColor!", BgCol: &Col{Id: 256, Rgb: Rgb{R: 128, G: 127, B: 126}}, Style: Bold}}, "\033[0;1;48;2;128;127;126mTrueColor!\033[0m"},
-		{"Truecolor Mixed", []*StyledText{{Label: "TrueColor!", FgCol: &Col{Id: 256, Rgb: Rgb{R: 90, G: 91, B: 92}}, BgCol: &Col{Id: 256, Rgb: Rgb{R: 128, G: 127, B: 126}}, Style: Bold | Faint | Underlined | Strikethrough | Italic | Invisible | Blinking | Inversed}}, "\033[0;1;2;3;4;5;7;8;9;38;2;90;91;92;48;2;128;127;126mTrueColor!\033[0m"},
+		{"ANSI256 Fg", []*StyledText{{ColourMode: TwoFiveSix, Label: "Dark Blue", FgCol: Cols[18]}}, "\033[0;38;5;18mDark Blue\033[0m"},
+		{"ANSI256 Fg Bold", []*StyledText{{ColourMode: TwoFiveSix, Label: "Dark Blue", FgCol: Cols[18], Style: Bold}}, "\033[0;1;38;5;18mDark Blue\033[0m"},
+		{"ANSI256 Bg", []*StyledText{{ColourMode: TwoFiveSix, Label: "Dark Blue", BgCol: Cols[18]}}, "\033[0;48;5;18mDark Blue\033[0m"},
+		{"ANSI256 Bg Bold", []*StyledText{{ColourMode: TwoFiveSix, Label: "Dark Blue", BgCol: Cols[18], Style: Bold}}, "\033[0;1;48;5;18mDark Blue\033[0m"},
+		{"Truecolor Fg", []*StyledText{{ColourMode: TrueColour, Label: "TrueColor!", FgCol: &Col{Id: 256, Rgb: Rgb{R: 128, G: 127, B: 126}}}}, "\033[0;38;2;128;127;126mTrueColor!\033[0m"},
+		{"Truecolor Fg Bold", []*StyledText{{ColourMode: TrueColour, Label: "TrueColor!", FgCol: &Col{Id: 256, Rgb: Rgb{R: 128, G: 127, B: 126}}, Style: Bold}}, "\033[0;1;38;2;128;127;126mTrueColor!\033[0m"},
+		{"Truecolor Bg", []*StyledText{{ColourMode: TrueColour, Label: "TrueColor!", BgCol: &Col{Id: 256, Rgb: Rgb{R: 128, G: 127, B: 126}}}}, "\033[0;48;2;128;127;126mTrueColor!\033[0m"},
+		{"Truecolor Bg Bold", []*StyledText{{ColourMode: TrueColour, Label: "TrueColor!", BgCol: &Col{Id: 256, Rgb: Rgb{R: 128, G: 127, B: 126}}, Style: Bold}}, "\033[0;1;48;2;128;127;126mTrueColor!\033[0m"},
+		{"Truecolor Mixed", []*StyledText{{ColourMode: TrueColour, Label: "TrueColor!", FgCol: &Col{Id: 256, Rgb: Rgb{R: 90, G: 91, B: 92}}, BgCol: &Col{Id: 256, Rgb: Rgb{R: 128, G: 127, B: 126}}, Style: Bold | Faint | Underlined | Strikethrough | Italic | Invisible | Blinking | Inversed}}, "\033[0;1;2;3;4;5;7;8;9;38;2;90;91;92;48;2;128;127;126mTrueColor!\033[0m"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

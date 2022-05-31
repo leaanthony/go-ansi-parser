@@ -30,12 +30,26 @@ const (
 	Strikethrough TextStyle = 1 << 7
 )
 
+type ColourMode int
+
+const (
+	Default    ColourMode = 0
+	TwoFiveSix ColourMode = 1
+	TrueColour ColourMode = 2
+)
+
+var invalid = fmt.Errorf("invalid ansi string")
+var missingTerminator = fmt.Errorf("missing escape terminator 'm'")
+var invalidTrueColorSequence = fmt.Errorf("invalid TrueColor sequence")
+var invalid256ColSequence = fmt.Errorf("invalid 256 colour sequence")
+
 // StyledText represents a single formatted string
 type StyledText struct {
-	Label string
-	FgCol *Col
-	BgCol *Col
-	Style TextStyle
+	Label      string
+	FgCol      *Col
+	BgCol      *Col
+	Style      TextStyle
+	ColourMode ColourMode
 }
 
 func (s *StyledText) styleToParams() []string {
@@ -66,8 +80,8 @@ func (s *StyledText) styleToParams() []string {
 	}
 	if s.FgCol != nil {
 		// Do we have an ID?
-		switch true {
-		case s.FgCol.Id < 16:
+		switch s.ColourMode {
+		case Default:
 			offset := 30
 			id := s.FgCol.Id
 			// Adjust when bold has been applied to the id
@@ -75,9 +89,9 @@ func (s *StyledText) styleToParams() []string {
 				id -= 8
 			}
 			params = append(params, fmt.Sprintf("%d", id+offset))
-		case s.FgCol.Id < 256:
+		case TwoFiveSix:
 			params = append(params, []string{"38", "5", fmt.Sprintf("%d", s.FgCol.Id)}...)
-		case s.FgCol.Id == 256:
+		case TrueColour:
 			r := fmt.Sprintf("%d", s.FgCol.Rgb.R)
 			g := fmt.Sprintf("%d", s.FgCol.Rgb.G)
 			b := fmt.Sprintf("%d", s.FgCol.Rgb.B)
@@ -86,12 +100,12 @@ func (s *StyledText) styleToParams() []string {
 	}
 	if s.BgCol != nil {
 		// Do we have an ID?
-		switch true {
-		case s.BgCol.Id < 16:
+		switch s.ColourMode {
+		case Default:
 			params = append(params, fmt.Sprintf("%d", s.BgCol.Id+40))
-		case s.BgCol.Id < 256:
+		case TwoFiveSix:
 			params = append(params, []string{"48", "5", fmt.Sprintf("%d", s.BgCol.Id)}...)
-		case s.BgCol.Id == 256:
+		case TrueColour:
 			r := fmt.Sprintf("%d", s.BgCol.Rgb.R)
 			g := fmt.Sprintf("%d", s.BgCol.Rgb.G)
 			b := fmt.Sprintf("%d", s.BgCol.Rgb.B)
@@ -185,15 +199,11 @@ var ColourMap = map[string]map[string]*Col{
 // If parsing is unsuccessful, an error is returned.
 func Parse(input string) ([]*StyledText, error) {
 	var result []*StyledText
-	invalid := fmt.Errorf("invalid ansi string")
-	missingTerminator := fmt.Errorf("missing escape terminator 'm'")
-	invalidTrueColorSequence := fmt.Errorf("invalid TrueColor sequence")
-	invalid256ColSequence := fmt.Errorf("invalid 256 colour sequence")
 	index := 0
-	var currentStyledText *StyledText = &StyledText{}
+	var currentStyledText = &StyledText{}
 
 	if len(input) == 0 {
-		return nil, invalid
+		return []*StyledText{currentStyledText}, nil
 	}
 
 	for {
@@ -291,6 +301,7 @@ func Parse(input string) ([]*StyledText, error) {
 					if colIndex < 0 || colIndex > 255 {
 						return nil, invalid256ColSequence
 					}
+					currentStyledText.ColourMode = TwoFiveSix
 					if param == "38" {
 						currentStyledText.FgCol = Cols[colIndex]
 						continue
@@ -329,6 +340,7 @@ func Parse(input string) ([]*StyledText, error) {
 				b = uint8(bi)
 				skip = 4
 				colvalue := fmt.Sprintf("#%02x%02x%02x", r, g, b)
+				currentStyledText.ColourMode = TrueColour
 				if param == "38" {
 					currentStyledText.FgCol = &Col{Id: 256, Hex: colvalue, Rgb: Rgb{r, g, b}}
 					continue
@@ -354,12 +366,6 @@ func String(input []*StyledText) string {
 			continue
 		}
 		result.WriteString(text.String())
-
-		//result.WriteString("\033[0;")
-		//result.WriteString(strings.Join(params, ";"))
-		//result.WriteString("m")
-		//result.WriteString(text.Label)
-		//result.WriteString("\033[0m")
 	}
 	return result.String()
 }
