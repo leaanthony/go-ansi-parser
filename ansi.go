@@ -28,7 +28,22 @@ const (
 	Underlined TextStyle = 1 << 6
 	// Strikethrough Style
 	Strikethrough TextStyle = 1 << 7
+	// Bright Style
+	Bright TextStyle = 1 << 8
 )
+
+type ColourMode int
+
+const (
+	Default    ColourMode = 0
+	TwoFiveSix ColourMode = 1
+	TrueColour ColourMode = 2
+)
+
+var invalid = fmt.Errorf("invalid ansi string")
+var missingTerminator = fmt.Errorf("missing escape terminator 'm'")
+var invalidTrueColorSequence = fmt.Errorf("invalid TrueColor sequence")
+var invalid256ColSequence = fmt.Errorf("invalid 256 colour sequence")
 
 const (
 	// Default colors uses foreground color codes [30-37].
@@ -39,10 +54,11 @@ const (
 
 // StyledText represents a single formatted string
 type StyledText struct {
-	Label string
-	FgCol *Col
-	BgCol *Col
-	Style TextStyle
+	Label      string
+	FgCol      *Col
+	BgCol      *Col
+	Style      TextStyle
+	ColourMode ColourMode
 }
 
 func (s *StyledText) styleToParams() []string {
@@ -73,18 +89,21 @@ func (s *StyledText) styleToParams() []string {
 	}
 	if s.FgCol != nil {
 		// Do we have an ID?
-		switch true {
-		case s.FgCol.Id < 16:
+		switch s.ColourMode {
+		case Default:
 			offset := 30
 			id := s.FgCol.Id
 			// Adjust when bold has been applied to the id
-			if s.Bold() && id > 7 && id < 16 {
+			if (s.Bold() || s.Bright()) && id > 7 && id < 16 {
 				id -= 8
 			}
+			if s.Bright() {
+				offset = 90
+			}
 			params = append(params, fmt.Sprintf("%d", id+offset))
-		case s.FgCol.Id < 256:
+		case TwoFiveSix:
 			params = append(params, []string{"38", "5", fmt.Sprintf("%d", s.FgCol.Id)}...)
-		case s.FgCol.Id == 256:
+		case TrueColour:
 			r := fmt.Sprintf("%d", s.FgCol.Rgb.R)
 			g := fmt.Sprintf("%d", s.FgCol.Rgb.G)
 			b := fmt.Sprintf("%d", s.FgCol.Rgb.B)
@@ -93,12 +112,21 @@ func (s *StyledText) styleToParams() []string {
 	}
 	if s.BgCol != nil {
 		// Do we have an ID?
-		switch true {
-		case s.BgCol.Id < 16:
-			params = append(params, fmt.Sprintf("%d", s.BgCol.Id+40))
-		case s.BgCol.Id < 256:
+		switch s.ColourMode {
+		case Default:
+			id := s.BgCol.Id
+			offset := 40
+			if s.Bright() {
+				offset = 100
+			}
+			// Adjust when bold has been applied to the id
+			if (s.Bold() || s.Bright()) && id > 7 && id < 16 {
+				id -= 8
+			}
+			params = append(params, fmt.Sprintf("%d", id+offset))
+		case TwoFiveSix:
 			params = append(params, []string{"48", "5", fmt.Sprintf("%d", s.BgCol.Id)}...)
-		case s.BgCol.Id == 256:
+		case TrueColour:
 			r := fmt.Sprintf("%d", s.BgCol.Rgb.R)
 			g := fmt.Sprintf("%d", s.BgCol.Rgb.G)
 			b := fmt.Sprintf("%d", s.BgCol.Rgb.B)
@@ -153,27 +181,64 @@ func (s *StyledText) Strikethrough() bool {
 	return s.Style&Strikethrough == Strikethrough
 }
 
+// Bright will return true if the text has a Bright style
+func (s *StyledText) Bright() bool {
+	return s.Style&Bright == Bright
+}
+
 // ColourMap maps ansi identifiers to a colour
 var ColourMap = map[string]map[string]*Col{
 	"Regular": {
-		"30": Cols[0],
-		"31": Cols[1],
-		"32": Cols[2],
-		"33": Cols[3],
-		"34": Cols[4],
-		"35": Cols[5],
-		"36": Cols[6],
-		"37": Cols[7],
+		"30":  Cols[0],
+		"31":  Cols[1],
+		"32":  Cols[2],
+		"33":  Cols[3],
+		"34":  Cols[4],
+		"35":  Cols[5],
+		"36":  Cols[6],
+		"37":  Cols[7],
+		"90":  Cols[8],
+		"91":  Cols[9],
+		"92":  Cols[10],
+		"93":  Cols[11],
+		"94":  Cols[12],
+		"95":  Cols[13],
+		"96":  Cols[14],
+		"97":  Cols[15],
+		"100": Cols[8],
+		"101": Cols[9],
+		"102": Cols[10],
+		"103": Cols[11],
+		"104": Cols[12],
+		"105": Cols[13],
+		"106": Cols[14],
+		"107": Cols[15],
 	},
 	"Bold": {
-		"30": Cols[8],
-		"31": Cols[9],
-		"32": Cols[10],
-		"33": Cols[11],
-		"34": Cols[12],
-		"35": Cols[13],
-		"36": Cols[14],
-		"37": Cols[15],
+		"30":  Cols[8],
+		"31":  Cols[9],
+		"32":  Cols[10],
+		"33":  Cols[11],
+		"34":  Cols[12],
+		"35":  Cols[13],
+		"36":  Cols[14],
+		"37":  Cols[15],
+		"90":  Cols[8],
+		"91":  Cols[9],
+		"92":  Cols[10],
+		"93":  Cols[11],
+		"94":  Cols[12],
+		"95":  Cols[13],
+		"96":  Cols[14],
+		"97":  Cols[15],
+		"100": Cols[8],
+		"101": Cols[9],
+		"102": Cols[10],
+		"103": Cols[11],
+		"104": Cols[12],
+		"105": Cols[13],
+		"106": Cols[14],
+		"107": Cols[15],
 	},
 	"Faint": {
 		"30": Cols[0],
@@ -192,15 +257,11 @@ var ColourMap = map[string]map[string]*Col{
 // If parsing is unsuccessful, an error is returned.
 func Parse(input string, options ...ParseOption) ([]*StyledText, error) {
 	var result []*StyledText
-	invalid := fmt.Errorf("invalid ansi string")
-	missingTerminator := fmt.Errorf("missing escape terminator 'm'")
-	invalidTrueColorSequence := fmt.Errorf("invalid TrueColor sequence")
-	invalid256ColSequence := fmt.Errorf("invalid 256 colour sequence")
 	index := 0
-	var currentStyledText *StyledText = &StyledText{}
+	var currentStyledText = &StyledText{}
 
 	if len(input) == 0 {
-		return nil, invalid
+		return []*StyledText{currentStyledText}, nil
 	}
 
 	for {
@@ -280,6 +341,12 @@ func Parse(input string, options ...ParseOption) ([]*StyledText, error) {
 				currentStyledText.Style |= Strikethrough
 			case "30", "31", "32", "33", "34", "35", "36", "37":
 				currentStyledText.FgCol = colourMap[param]
+			case "90", "91", "92", "93", "94", "95", "96", "97":
+				currentStyledText.FgCol = colourMap[param]
+				currentStyledText.Style |= Bright
+			case "100", "101", "102", "103", "104", "105", "106", "107":
+				currentStyledText.BgCol = colourMap[param]
+				currentStyledText.Style |= Bright
 			case "40", "41", "42", "43", "44", "45", "46", "47":
 				bgcol := "3" + param[1:] // Equivalent of -10
 				currentStyledText.BgCol = colourMap[bgcol]
@@ -298,6 +365,7 @@ func Parse(input string, options ...ParseOption) ([]*StyledText, error) {
 					if colIndex < 0 || colIndex > 255 {
 						return nil, invalid256ColSequence
 					}
+					currentStyledText.ColourMode = TwoFiveSix
 					if param == "38" {
 						currentStyledText.FgCol = Cols[colIndex]
 						continue
@@ -336,6 +404,7 @@ func Parse(input string, options ...ParseOption) ([]*StyledText, error) {
 				b = uint8(bi)
 				skip = 4
 				colvalue := fmt.Sprintf("#%02x%02x%02x", r, g, b)
+				currentStyledText.ColourMode = TrueColour
 				if param == "38" {
 					currentStyledText.FgCol = &Col{Id: 256, Hex: colvalue, Rgb: Rgb{r, g, b}}
 					continue
@@ -397,12 +466,6 @@ func String(input []*StyledText) string {
 			continue
 		}
 		result.WriteString(text.String())
-
-		//result.WriteString("\033[0;")
-		//result.WriteString(strings.Join(params, ";"))
-		//result.WriteString("m")
-		//result.WriteString(text.Label)
-		//result.WriteString("\033[0m")
 	}
 	return result.String()
 }
