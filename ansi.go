@@ -59,6 +59,11 @@ type StyledText struct {
 	BgCol      *Col
 	Style      TextStyle
 	ColourMode ColourMode
+	// Offset is the offset into the input string where the StyledText begins
+	Offset int
+	// Len is the length in bytes of the substring of the input text that
+	// contains the styled text
+	Len int
 }
 
 func (s *StyledText) styleToParams() []string {
@@ -258,6 +263,8 @@ var ColourMap = map[string]map[string]*Col{
 func Parse(input string, options ...ParseOption) ([]*StyledText, error) {
 	var result []*StyledText
 	index := 0
+	offset := 0
+	escapeCodeLen := 0
 	var currentStyledText = &StyledText{}
 
 	if len(input) == 0 {
@@ -273,6 +280,8 @@ func Parse(input string, options ...ParseOption) ([]*StyledText, error) {
 			text := input[index:]
 			if len(text) > 0 {
 				currentStyledText.Label = text
+				currentStyledText.Offset = offset
+				currentStyledText.Len = len(text) + escapeCodeLen
 				result = append(result, currentStyledText)
 			}
 			return result, nil
@@ -280,6 +289,9 @@ func Parse(input string, options ...ParseOption) ([]*StyledText, error) {
 		label := input[:esc]
 		if len(label) > 0 {
 			currentStyledText.Label = label
+			currentStyledText.Offset = offset
+			currentStyledText.Len = len(label) + escapeCodeLen
+			offset += currentStyledText.Len
 			result = append(result, currentStyledText)
 			currentStyledText = &StyledText{
 				Label: "",
@@ -287,6 +299,7 @@ func Parse(input string, options ...ParseOption) ([]*StyledText, error) {
 				BgCol: currentStyledText.BgCol,
 				Style: currentStyledText.Style,
 			}
+			escapeCodeLen = 0
 		}
 		input = input[esc:]
 		// skip
@@ -299,6 +312,7 @@ func Parse(input string, options ...ParseOption) ([]*StyledText, error) {
 		}
 		paramText := input[:endesc]
 		input = input[endesc+1:]
+		escapeCodeLen += 2 + endesc + 1
 		params := strings.Split(paramText, ";")
 		colourMap := ColourMap["Regular"]
 		skip := 0

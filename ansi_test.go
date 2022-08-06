@@ -16,6 +16,8 @@ func TestParseAnsi16Styles(t *testing.T) {
 	is2.NoErr(err)
 	is2.Equal(len(got), 1)
 	is2.True(got[0].Bold())
+	is2.Equal(got[0].Len, 18)
+	is2.Equal(got[0].Offset, 0)
 	// Faint
 	got, err = Parse("\u001b[2;30mHello World\033[0m")
 	is2.NoErr(err)
@@ -226,57 +228,57 @@ func TestParseAnsi16MultiColour(t *testing.T) {
 		wantErr bool
 	}{
 		{"Black & Red", "\u001B[0;30mHello World\u001B[0m\u001B[0;31mHello World\u001B[0m", []*StyledText{
-			{Label: "Hello World", FgCol: &Col{Name: "Black"}},
-			{Label: "Hello World", FgCol: &Col{Name: "Maroon"}},
+			{Label: "Hello World", FgCol: &Col{Name: "Black"}, Offset: 0, Len: 18},
+			{Label: "Hello World", FgCol: &Col{Name: "Maroon"}, Offset: 18, Len: 22},
 		}, false},
 		{"Text then Black & Red", "This is great!\u001B[0;30mHello World\u001B[0m\u001B[0;31mHello World\u001B[0m", []*StyledText{
-			{Label: "This is great!"},
-			{Label: "Hello World", FgCol: &Col{Name: "Black"}},
-			{Label: "Hello World", FgCol: &Col{Name: "Maroon"}},
+			{Label: "This is great!", Offset: 0, Len: 14},
+			{Label: "Hello World", FgCol: &Col{Name: "Black"}, Offset: 14, Len: 18},
+			{Label: "Hello World", FgCol: &Col{Name: "Maroon"}, Offset: 32, Len: 22},
 		}, false},
 		{"Text Reset then Black & Red", "This is great!\u001B[0m\u001B[0;30mHello World\u001B[0m\u001B[0;31mHello World\u001B[0m", []*StyledText{
-			{Label: "This is great!"},
-			{Label: "Hello World", FgCol: &Col{Name: "Black"}},
-			{Label: "Hello World", FgCol: &Col{Name: "Maroon"}},
+			{Label: "This is great!", Offset: 0, Len: 14},
+			{Label: "Hello World", FgCol: &Col{Name: "Black"}, Offset: 14, Len: 22},
+			{Label: "Hello World", FgCol: &Col{Name: "Maroon"}, Offset: 36, Len: 22},
 		}, false},
 		{"Text Reset then Black & Red", "This is great!\u001B[0m", []*StyledText{
-			{Label: "This is great!"},
+			{Label: "This is great!", Offset: 0, Len: 14},
 		}, false},
 		{"Black & Red no reset", "\u001B[0;30mHello World\u001B[0;31mHello World", []*StyledText{
-			{Label: "Hello World", FgCol: &Col{Name: "Black"}},
-			{Label: "Hello World", FgCol: &Col{Name: "Maroon"}},
+			{Label: "Hello World", FgCol: &Col{Name: "Black"}, Offset: 0, Len: 18},
+			{Label: "Hello World", FgCol: &Col{Name: "Maroon"}, Offset: 18, Len: 18},
 		}, false},
 		{"Black,space,Red", "\u001B[0;30mHello World\u001B[0m \u001B[0;31mHello World\u001B[0m", []*StyledText{
-			{Label: "Hello World", FgCol: &Col{Name: "Black"}},
-			{Label: " "},
-			{Label: "Hello World", FgCol: &Col{Name: "Maroon"}},
+			{Label: "Hello World", FgCol: &Col{Name: "Black"}, Offset: 0, Len: 18},
+			{Label: " ", Offset: 18, Len: 5},
+			{Label: "Hello World", FgCol: &Col{Name: "Maroon"}, Offset: 23, Len: 18},
 		}, false},
 		{"Black,Red,Blue,Green underlined", "\033[4;30mBlack\u001B[0m\u001B[4;31mRed\u001B[0m\u001B[4;34mBlue\u001B[0m\u001B[4;32mGreen\u001B[0m", []*StyledText{
-			{Label: "Black", FgCol: &Col{Name: "Black"}, Style: Underlined},
-			{Label: "Red", FgCol: &Col{Name: "Maroon"}, Style: Underlined},
-			{Label: "Blue", FgCol: &Col{Name: "Navy"}, Style: Underlined},
-			{Label: "Green", FgCol: &Col{Name: "Green"}, Style: Underlined},
+			{Label: "Black", FgCol: &Col{Name: "Black"}, Style: Underlined, Offset: 0, Len: 12},
+			{Label: "Red", FgCol: &Col{Name: "Maroon"}, Style: Underlined, Offset: 12, Len: 14},
+			{Label: "Blue", FgCol: &Col{Name: "Navy"}, Style: Underlined, Offset: 26, Len: 15},
+			{Label: "Green", FgCol: &Col{Name: "Green"}, Style: Underlined, Offset: 41, Len: 16},
 		}, false},
 		{"Black,Red,Blue,Green bold", "\033[1;30mBlack\u001B[0m\u001B[1;31mRed\u001B[0m\u001B[1;34mBlue\u001B[0m\u001B[1;32mGreen\u001B[0m", []*StyledText{
-			{Label: "Black", FgCol: &Col{Name: "Grey"}, Style: Bold},
-			{Label: "Red", FgCol: &Col{Name: "Red"}, Style: Bold},
-			{Label: "Blue", FgCol: &Col{Name: "Blue"}, Style: Bold},
-			{Label: "Green", FgCol: &Col{Name: "Lime"}, Style: Bold},
+			{Label: "Black", FgCol: &Col{Name: "Grey"}, Style: Bold, Offset: 0, Len: 12},
+			{Label: "Red", FgCol: &Col{Name: "Red"}, Style: Bold, Offset: 12, Len: 14},
+			{Label: "Blue", FgCol: &Col{Name: "Blue"}, Style: Bold, Offset: 26, Len: 15},
+			{Label: "Green", FgCol: &Col{Name: "Lime"}, Style: Bold, Offset: 41, Len: 16},
 		}, false},
 		{"Green Feint & Yellow Italic", "\u001B[2;32m👩🏽‍🔧\u001B[0m\u001B[0;3;33m👩🏽‍🔧\u001B[0m", []*StyledText{
-			{Label: "👩🏽‍🔧", FgCol: &Col{Name: "Green"}, Style: Faint},
-			{Label: "👩🏽‍🔧", FgCol: &Col{Name: "Olive"}, Style: Italic},
+			{Label: "👩🏽‍🔧", FgCol: &Col{Name: "Green"}, Style: Faint, Offset: 0, Len: len("👩🏽‍🔧") + 7},
+			{Label: "👩🏽‍🔧", FgCol: &Col{Name: "Olive"}, Style: Italic, Offset: len("👩🏽‍🔧") + 7, Len: len("👩🏽‍🔧") + 13},
 		}, false},
 		{"Green Blinking & Yellow Inversed", "\u001B[5;32m👩🏽‍🔧\u001B[0m\u001B[0;7;33m👩🏽‍🔧\u001B[0m", []*StyledText{
-			{Label: "👩🏽‍🔧", FgCol: &Col{Name: "Green"}, Style: Blinking},
-			{Label: "👩🏽‍🔧", FgCol: &Col{Name: "Olive"}, Style: Inversed},
+			{Label: "👩🏽‍🔧", FgCol: &Col{Name: "Green"}, Style: Blinking, Offset: 0, Len: len("👩🏽‍🔧") + 7},
+			{Label: "👩🏽‍🔧", FgCol: &Col{Name: "Olive"}, Style: Inversed, Offset: len("👩🏽‍🔧") + 7, Len: len("👩🏽‍🔧") + 13},
 		}, false},
 		{"Green Invisible & Yellow Invisible & Strikethrough", "\u001B[8;32m👩🏽‍🔧\u001B[9;33m👩🏽‍🔧\u001B[0m", []*StyledText{
-			{Label: "👩🏽‍🔧", FgCol: &Col{Name: "Green"}, Style: Invisible},
-			{Label: "👩🏽‍🔧", FgCol: &Col{Name: "Olive"}, Style: Invisible | Strikethrough},
+			{Label: "👩🏽‍🔧", FgCol: &Col{Name: "Green"}, Style: Invisible, Offset: 0, Len: len("👩🏽‍🔧") + 7},
+			{Label: "👩🏽‍🔧", FgCol: &Col{Name: "Olive"}, Style: Invisible | Strikethrough, Offset: len("👩🏽‍🔧") + 7, Len: len("👩🏽‍🔧") + 7},
 		}, false},
 		{"Red Foregraound & Black Background", "\u001b[1;31;40mHello World\033[0m", []*StyledText{
-			{Label: "Hello World", FgCol: &Col{Name: "Red"}, BgCol: &Col{Name: "Black"}, Style: Bold},
+			{Label: "Hello World", FgCol: &Col{Name: "Red"}, BgCol: &Col{Name: "Black"}, Style: Bold, Offset: 0, Len: 21},
 		}, false},
 	}
 	for _, tt := range tests {
@@ -289,6 +291,8 @@ func TestParseAnsi16MultiColour(t *testing.T) {
 					is2.Equal(got[index].FgCol.Name, w.FgCol.Name)
 				}
 				is2.Equal(got[index].Style, w.Style)
+				is2.Equal(got[index].Offset, w.Offset)
+				is2.Equal(got[index].Len, w.Len)
 			}
 		})
 	}
