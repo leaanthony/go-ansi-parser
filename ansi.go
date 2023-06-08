@@ -2,9 +2,10 @@ package ansi
 
 import (
 	"fmt"
-	"github.com/rivo/uniseg"
 	"strconv"
 	"strings"
+
+	"github.com/rivo/uniseg"
 )
 
 // TextStyle is a type representing the
@@ -321,6 +322,7 @@ func Parse(input string, options ...ParseOption) ([]*StyledText, error) {
 				skip--
 				continue
 			}
+			param = stripLeadingZeros(param)
 			switch param {
 			case "0", "":
 				colourMap = ColourMap["Regular"]
@@ -369,9 +371,10 @@ func Parse(input string, options ...ParseOption) ([]*StyledText, error) {
 					return nil, invalid
 				}
 				// 256 colours
-				if params[index+1] == "5" {
+				param1 := stripLeadingZeros(params[index+1])
+				if param1 == "5" {
 					skip = 2
-					colIndexText := params[index+2]
+					colIndexText := stripLeadingZeros(params[index+2])
 					colIndex, err := strconv.Atoi(colIndexText)
 					if err != nil {
 						return nil, invalid256ColSequence
@@ -391,7 +394,7 @@ func Parse(input string, options ...ParseOption) ([]*StyledText, error) {
 				if len(params)-index < 5 {
 					return nil, invalidTrueColorSequence
 				}
-				if params[index+1] != "2" {
+				if param1 != "2" {
 					return nil, invalidTrueColorSequence
 				}
 				var r, g, b uint8
@@ -463,6 +466,13 @@ func Parse(input string, options ...ParseOption) ([]*StyledText, error) {
 			}
 		}
 	}
+}
+
+func stripLeadingZeros(s string) string {
+	if len(s) < 2 {
+		return s
+	}
+	return strings.TrimLeft(s, "0")
 }
 
 // HasEscapeCodes tests that input has escape codes.

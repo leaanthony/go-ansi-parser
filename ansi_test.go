@@ -687,3 +687,25 @@ func TestLength(t *testing.T) {
 		})
 	}
 }
+
+func TestStripLeadingZeros(t *testing.T) {
+	is2 := is.New(t)
+	tests := []struct {
+		name    string
+		input   string
+		want    string
+	}{
+		{"Blank", "", ""},
+		{"One rune not 0", "4", "4"},
+		{"Only 0", "0", "0"},
+		{"Multi-digit non-0", "35", "35"},
+		{"Two-digit leading 0", "05", "5"},
+		{"Three-digit leading 0", "045", "45"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := stripLeadingZeros(tt.input)
+			is2.Equal(got, tt.want)
+		})
+	}
+}
